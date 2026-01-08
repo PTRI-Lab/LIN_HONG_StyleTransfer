@@ -2,8 +2,6 @@
 
 基於 ComfyUI 和 IPAdapter 技術的網頁版風格轉換工具，讓您輕鬆將任何照片轉換成藝術作品風格。
 
-![Demo](https://via.placeholder.com/800x400?text=Demo+Screenshot)
-
 ## ✨ 特色功能
 
 - 🖼️ **簡單易用**：直覺的拖放介面，無需複雜操作
@@ -11,10 +9,6 @@
 - ⚙️ **參數可調**：提供多種參數微調，滿足不同需求
 - 🚀 **即時預覽**：支援多種解析度，快速預覽效果
 - 💾 **一鍵下載**：輕鬆保存轉換後的圖片
-
-## 🎬 Demo
-
-[在線 Demo](https://your-demo-link.com) | [觀看影片教學](https://your-video-link.com)
 
 ## 📋 系統需求
 
@@ -220,7 +214,7 @@ ComfyUI/models/
 5. 開啟 Pull Request
 
 
-## 🙏 致謝
+## 參考資源
 
 - [ComfyUI](https://github.com/comfyanonymous/ComfyUI) - 強大的 Stable Diffusion GUI
 - [IPAdapter](https://github.com/tencent-ailab/IP-Adapter) - 圖像提示適配器
