@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 風格轉換</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 25%, #4c1d95 50%, #5b21b6 75%, #6d28d9 100%);
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(147, 51, 234, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(59, 130, 246, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            background: linear-gradient(135deg, #fff 0%, #e0e7ff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 40px rgba(147, 51, 234, 0.5);
+        }
+
+        .header p {
+            color: #e0e7ff;
+            font-size: 1.1em;
+        }
+
+        .api-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .api-section label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .api-section input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #e0e7ff, #c7d2fe);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .api-section input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea, #3b82f6);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(147, 51, 234, 0.4);
+            transition: all 0.3s;
+        }
+
+        .api-section input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.6);
+        }
+
+        .api-section input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9333ea, #3b82f6);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(147, 51, 234, 0.4);
+        }
+
+        .api-section h3 {
+            font-size: 1.2em;
+        }
+
+        details summary {
+            list-style: none;
+            padding: 0;
+        }
+
+        details summary::-webkit-details-marker {
+            display: none;
+        }
+
+        details[open] summary {
+            margin-bottom: 15px;
+        }
+
+        .api-section input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .api-section input:focus {
+            outline: none;
+            border-color: #9333ea;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+        }
+
+        .api-section .hint {
+            color: #9ca3af;
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .upload-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .upload-box {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .upload-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .upload-box h2 {
+            font-size: 1.3em;
+            color: #374151;
+            margin-bottom: 20px;
+        }
+
+        .upload-area {
+            border: 2px dashed rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        }
+
+        .upload-area:hover {
+            border-color: #9333ea;
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            transform: scale(1.02);
+        }
+
+        .upload-area.content:hover {
+            border-color: #9333ea;
+            box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+        }
+
+        .upload-area.style:hover {
+            border-color: #3b82f6;
+            box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+
+        .upload-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(147, 51, 234, 0.3));
+        }
+
+        .upload-text {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .upload-hint {
+            color: #9ca3af;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .preview-container {
+            position: relative;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 8px;
+            display: block;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+        }
+
+        .remove-btn:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .error-box {
+            background: rgba(254, 242, 242, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid #fecaca;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .error-box.show {
+            display: flex;
+            align-items: center;
+        }
+
+        .error-icon {
+            color: #ef4444;
+            font-size: 1.5em;
+            margin-right: 10px;
+        }
+
+        .error-text {
+            color: #991b1b;
+        }
+
+        .submit-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #9333ea, #3b82f6);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 8px 24px rgba(147, 51, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(147, 51, 234, 0.5);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .result-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            display: none;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .result-header h2 {
+            font-size: 1.5em;
+            color: #374151;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(135deg, #059669, #047857);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .result-image {
+            width: 50%;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #e0e7ff;
+            font-size: 0.9em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI 風格轉換</h1>
+            <p>上傳圖片，讓 AI 為你創造獨特的藝術作品</p>
+        </div>
+
+        <div class="api-section">
+            <label for="apiUrl">API 伺服器 URL</label>
+            <input type="text" id="apiUrl" placeholder="http://127.0.0.1:8188">
+            <div class="hint">請輸入你的 ComfyUI 伺服器地址（例如：http://127.0.0.1:8188）</div>
+        </div>
+
+        <div class="api-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="margin: 0; color: #374151;">效果調整</h3>
+                <button onclick="resetParameters()" style="background: linear-gradient(135deg, #6b7280, #4b5563); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.3s; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 0, 0, 0.3)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(0, 0, 0, 0.2)'">
+                    🔄 恢復預設值
+                </button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+                <div>
+                    <label for="styleWeight">🎨 風格化程度</label>
+                    <input type="range" id="styleWeight" min="0.5" max="2.0" step="0.1" value="1.5">
+                    <div class="hint"><span id="styleWeightValue">1.5</span> - 越高風格越明顯，越低越像原圖</div>
+                </div>
+
+                <div>
+                    <label for="compositionWeight">📐 保留構圖</label>
+                    <input type="range" id="compositionWeight" min="0.5" max="1.5" step="0.1" value="0.8">
+                    <div class="hint"><span id="compositionWeightValue">0.8</span> - 越高越保留原圖構圖</div>
+                </div>
+
+                <div>
+                    <label for="lineartStrength">✏️ 保留輪廓</label>
+                    <input type="range" id="lineartStrength" min="0" max="1.0" step="0.05" value="0.85">
+                    <div class="hint"><span id="lineartStrengthValue">0.85</span> - 越高越保留物體形狀</div>
+                </div>
+
+                <div>
+                    <label for="depthStrength">🏔️ 保留立體感</label>
+                    <input type="range" id="depthStrength" min="0" max="1.0" step="0.05" value="0.85">
+                    <div class="hint"><span id="depthStrengthValue">0.85</span> - 越高越保留空間深度</div>
+                </div>
+
+                <div>
+                    <label for="steps">⚡ 生成品質</label>
+                    <input type="range" id="steps" min="4" max="15" step="1" value="6">
+                    <div class="hint"><span id="stepsValue">6</span> - 建議 6 (快速) 或 12 (高品質)</div>
+                </div>
+
+                <div>
+                    <label for="imageSize">📏 輸出尺寸</label>
+                    <select id="imageSize" style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em;">
+                        <option value="512">512px - 快速預覽</option>
+                        <option value="768">768px - 一般品質</option>
+                        <option value="1024" selected>1024px - 推薦</option>
+                        <option value="1536">1536px - 高品質</option>
+                    </select>
+                    <div class="hint">尺寸越大處理越慢</div>
+                </div>
+            </div>
+
+            <details style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(59, 130, 246, 0.1)); border-radius: 12px; cursor: pointer; border: 1px solid rgba(147, 51, 234, 0.2);">
+                <summary style="font-weight: 600; color: #374151; cursor: pointer;">⚙️ 進階選項</summary>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 15px;">
+                    <div>
+                        <label for="cfg">🎯 遵循度 (CFG)</label>
+                        <input type="range" id="cfg" min="1.5" max="5.0" step="0.5" value="2">
+                        <div class="hint"><span id="cfgValue">2.0</span> - 通常不需調整</div>
+                    </div>
+
+                    <div>
+                        <label for="upscale">🔍 放大倍數</label>
+                        <input type="range" id="upscale" min="1.0" max="2.0" step="0.1" value="1.5">
+                        <div class="hint"><span id="upscaleValue">1.5</span>x - 最終放大處理</div>
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <div class="error-box" id="errorBox">
+            <div class="error-icon">⚠️</div>
+            <div class="error-text" id="errorText"></div>
+        </div>
+
+        <div class="upload-grid">
+            <div class="upload-box">
+                <h2>內容圖片</h2>
+                <input type="file" id="contentInput" accept="image/*" class="hidden">
+                <div class="upload-area content" id="contentUpload" onclick="document.getElementById('contentInput').click()">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">點擊上傳圖片</div>
+                    <div class="upload-hint">支援 JPG、PNG</div>
+                </div>
+                <div class="preview-container hidden" id="contentPreview">
+                    <img class="preview-image" id="contentImage" alt="Content">
+                    <button class="remove-btn" onclick="clearImage('content')">×</button>
+                </div>
+            </div>
+
+            <div class="upload-box">
+                <h2>風格圖片</h2>
+                <input type="file" id="styleInput" accept="image/*" class="hidden">
+                <div class="upload-area style" id="styleUpload" onclick="document.getElementById('styleInput').click()">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">點擊上傳圖片</div>
+                    <div class="upload-hint">支援 JPG、PNG</div>
+                </div>
+                <div class="preview-container hidden" id="stylePreview">
+                    <img class="preview-image" id="styleImage" alt="Style">
+                    <button class="remove-btn" onclick="clearImage('style')">×</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="submit-section">
+            <button class="submit-btn" id="submitBtn" onclick="handleSubmit()">
+                開始轉換風格
+            </button>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-header">
+                <h2>轉換結果</h2>
+                <button class="download-btn" onclick="downloadResult()">下載圖片</button>
+            </div>
+            <img class="result-image" id="resultImage" alt="Result">
+        </div>
+
+        <div class="footer">
+            <p>使用 ComfyUI 與 IPAdapter 技術提供風格轉換服務</p>
+        </div>
+    </div>
+
+    <script>
+        var contentFile = null;
+        var styleFile = null;
+        var resultBlob = null;
+
+        // Update slider values display
+        var sliders = [
+            {id: 'styleWeight', displayId: 'styleWeightValue'},
+            {id: 'compositionWeight', displayId: 'compositionWeightValue'},
+            {id: 'steps', displayId: 'stepsValue'},
+            {id: 'cfg', displayId: 'cfgValue'},
+            {id: 'lineartStrength', displayId: 'lineartStrengthValue'},
+            {id: 'depthStrength', displayId: 'depthStrengthValue'},
+            {id: 'upscale', displayId: 'upscaleValue'}
+        ];
+
+        sliders.forEach(function(slider) {
+            var element = document.getElementById(slider.id);
+            element.addEventListener('input', function(e) {
+                document.getElementById(slider.displayId).textContent = e.target.value;
+            });
+        });
+
+        // Reset parameters to default
+        function resetParameters() {
+            var defaults = {
+                'styleWeight': 1.5,
+                'compositionWeight': 0.8,
+                'steps': 6,
+                'cfg': 2.0,
+                'lineartStrength': 0.85,
+                'depthStrength': 0.85,
+                'upscale': 1.5,
+                'imageSize': '1024'
+            };
+
+            for (var key in defaults) {
+                var element = document.getElementById(key);
+                if (element) {
+                    element.value = defaults[key];
+                    var displayId = key + 'Value';
+                    var displayElement = document.getElementById(displayId);
+                    if (displayElement) {
+                        displayElement.textContent = defaults[key];
+                    }
+                }
+            }
+
+            // Show confirmation
+            var originalText = document.querySelector('[onclick="resetParameters()"]').textContent;
+            document.querySelector('[onclick="resetParameters()"]').textContent = '✓ 已恢復預設值';
+            setTimeout(function() {
+                document.querySelector('[onclick="resetParameters()"]').textContent = originalText;
+            }, 2000);
+        }
+
+        document.getElementById('contentInput').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                contentFile = file;
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('contentImage').src = event.target.result;
+                    document.getElementById('contentUpload').classList.add('hidden');
+                    document.getElementById('contentPreview').classList.remove('hidden');
+                    hideError();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showError('請選擇有效的圖片檔案');
+            }
+        });
+
+        document.getElementById('styleInput').addEventListener('change', function(e) {
+            var file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                styleFile = file;
+                var reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('styleImage').src = event.target.result;
+                    document.getElementById('styleUpload').classList.add('hidden');
+                    document.getElementById('stylePreview').classList.remove('hidden');
+                    hideError();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                showError('請選擇有效的圖片檔案');
+            }
+        });
+
+        function clearImage(type) {
+            if (type === 'content') {
+                contentFile = null;
+                document.getElementById('contentInput').value = '';
+                document.getElementById('contentUpload').classList.remove('hidden');
+                document.getElementById('contentPreview').classList.add('hidden');
+            } else {
+                styleFile = null;
+                document.getElementById('styleInput').value = '';
+                document.getElementById('styleUpload').classList.remove('hidden');
+                document.getElementById('stylePreview').classList.add('hidden');
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorBox').classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').classList.remove('show');
+        }
+
+        async function handleSubmit() {
+            var apiUrl = document.getElementById('apiUrl').value.trim();
+            var submitBtn = document.getElementById('submitBtn');
+
+            if (!contentFile || !styleFile) {
+                showError('請上傳內容圖片和風格圖片');
+                return;
+            }
+
+            if (!apiUrl) {
+                showError('請輸入 API URL');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading-spinner"></span>處理中...';
+            hideError();
+            document.getElementById('resultSection').classList.remove('show');
+
+            try {
+                var baseUrl = apiUrl.replace(/\/$/, '');
+                
+                // Step 1: Upload content image
+                var contentFormData = new FormData();
+                contentFormData.append('image', contentFile);
+                contentFormData.append('overwrite', 'true');
+                
+                var contentUploadRes = await fetch(baseUrl + '/upload/image', {
+                    method: 'POST',
+                    body: contentFormData
+                });
+                
+                if (!contentUploadRes.ok) {
+                    throw new Error('上傳內容圖片失敗: ' + contentUploadRes.status);
+                }
+                
+                var contentData = await contentUploadRes.json();
+                var contentImageName = contentData.name;
+                
+                // Step 2: Upload style image
+                var styleFormData = new FormData();
+                styleFormData.append('image', styleFile);
+                styleFormData.append('overwrite', 'true');
+                
+                var styleUploadRes = await fetch(baseUrl + '/upload/image', {
+                    method: 'POST',
+                    body: styleFormData
+                });
+                
+                if (!styleUploadRes.ok) {
+                    throw new Error('上傳風格圖片失敗: ' + styleUploadRes.status);
+                }
+                
+                var styleData = await styleUploadRes.json();
+                var styleImageName = styleData.name;
+                
+                // Get parameter values
+                var styleWeight = parseFloat(document.getElementById('styleWeight').value);
+                var compositionWeight = parseFloat(document.getElementById('compositionWeight').value);
+                var steps = parseInt(document.getElementById('steps').value);
+                var cfg = parseFloat(document.getElementById('cfg').value);
+                var lineartStrength = parseFloat(document.getElementById('lineartStrength').value);
+                var depthStrength = parseFloat(document.getElementById('depthStrength').value);
+                var upscale = parseFloat(document.getElementById('upscale').value);
+                var imageSize = parseInt(document.getElementById('imageSize').value);
+                
+                // Step 3: Prepare workflow
+                var workflow = {
+                    "12": {"inputs": {"image": styleImageName}, "class_type": "LoadImage"},
+                    "19": {"inputs": {"preset": "PLUS (high strength)", "model": ["72", 0]}, "class_type": "IPAdapterUnifiedLoader"},
+                    "72": {"inputs": {"ckpt_name": "dreamshaperXL_lightningDPMSDE.safetensors", "prompt": "[none]", "example": "[none]"}, "class_type": "CheckpointLoader|pysssss"},
+                    "74": {"inputs": {"text": "", "token_normalization": "none", "weight_interpretation": "A1111", "clip": ["72", 1]}, "class_type": "BNK_CLIPTextEncodeAdvanced"},
+                    "75": {"inputs": {"text": "NSFW,old", "token_normalization": "none", "weight_interpretation": "A1111", "clip": ["72", 1]}, "class_type": "BNK_CLIPTextEncodeAdvanced"},
+                    "77": {"inputs": {"seed": Math.floor(Math.random() * 1000000000000), "steps": steps, "cfg": cfg, "sampler_name": "dpmpp_sde_gpu", "scheduler": "karras", "denoise": 1, "model": ["102", 0], "positive": ["121", 0], "negative": ["121", 1], "latent_image": ["116", 0]}, "class_type": "KSampler"},
+                    "78": {"inputs": {"samples": ["77", 0], "vae": ["72", 2]}, "class_type": "VAEDecode"},
+                    "84": {"inputs": {"image": contentImageName}, "class_type": "LoadImage"},
+                    "102": {"inputs": {"weight_style": styleWeight, "weight_composition": compositionWeight, "expand_style": false, "combine_embeds": "average", "start_at": 0, "end_at": 1, "embeds_scaling": "V only", "model": ["19", 0], "ipadapter": ["19", 1], "image_style": ["118", 0], "image_composition": ["151", 0]}, "class_type": "IPAdapterStyleComposition"},
+                    "111": {"inputs": {"strength": lineartStrength, "start_percent": 0, "end_percent": 0.85, "positive": ["74", 0], "negative": ["75", 0], "control_net": ["115", 0], "image": ["114", 0]}, "class_type": "ControlNetApplyAdvanced"},
+                    "114": {"inputs": {"preprocessor": "LineArtPreprocessor", "resolution": ["131", 0], "image": ["151", 0]}, "class_type": "AIO_Preprocessor"},
+                    "115": {"inputs": {"control_net_name": "sd_xl_base_control-lora-canny-rank256.safetensors"}, "class_type": "ControlNetLoader"},
+                    "116": {"inputs": {"width": ["117", 0], "height": ["117", 1], "batch_size": 1}, "class_type": "EmptyLatentImage"},
+                    "117": {"inputs": {"image": ["151", 0]}, "class_type": "GetImageSize+"},
+                    "118": {"inputs": {"interpolation": "LANCZOS", "crop_position": "pad", "sharpening": 0, "image": ["12", 0]}, "class_type": "PrepImageForClipVision"},
+                    "121": {"inputs": {"strength": depthStrength, "start_percent": 0, "end_percent": 0.6, "positive": ["111", 0], "negative": ["111", 1], "control_net": ["123", 0], "image": ["122", 0]}, "class_type": "ControlNetApplyAdvanced"},
+                    "122": {"inputs": {"preprocessor": "DepthAnythingPreprocessor", "resolution": ["131", 0], "image": ["151", 0]}, "class_type": "AIO_Preprocessor"},
+                    "123": {"inputs": {"control_net_name": "sai_xl_depth_256lora.safetensors"}, "class_type": "ControlNetLoader"},
+                    "131": {"inputs": {"image_gen_width": ["117", 0], "image_gen_height": ["117", 1], "resize_mode": "Just Resize", "original_image": ["151", 0]}, "class_type": "PixelPerfectResolution"},
+                    "137": {"inputs": {"filename_prefix": "Style Transfer/st", "images": ["140", 0]}, "class_type": "SaveImage"},
+                    "139": {"inputs": {"seed": Math.floor(Math.random() * 1000000000000), "steps": steps, "cfg": cfg, "sampler_name": "dpmpp_sde_gpu", "scheduler": "karras", "denoise": 0.51, "model": ["102", 0], "positive": ["121", 0], "negative": ["121", 1], "latent_image": ["147", 0]}, "class_type": "KSampler"},
+                    "140": {"inputs": {"samples": ["139", 0], "vae": ["72", 2]}, "class_type": "VAEDecode"},
+                    "143": {"inputs": {"images": ["78", 0]}, "class_type": "PreviewImage"},
+                    "147": {"inputs": {"upscale_method": "nearest-exact", "scale_by": upscale, "samples": ["77", 0]}, "class_type": "LatentUpscaleBy"},
+                    "151": {"inputs": {"side_length": imageSize, "side": "Longest", "upscale_method": "nearest-exact", "crop": "disabled", "image": ["84", 0]}, "class_type": "DF_Image_scale_to_side"}
+                };
+                
+                // Step 4: Queue prompt
+                var promptResponse = await fetch(baseUrl + '/prompt', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({prompt: workflow})
+                });
+                
+                if (!promptResponse.ok) {
+                    throw new Error('執行工作流程失敗: ' + promptResponse.status);
+                }
+                
+                var promptData = await promptResponse.json();
+                var promptId = promptData.prompt_id;
+                
+                // Step 5: Poll for completion
+                submitBtn.innerHTML = '<span class="loading-spinner"></span>生成中，請稍候...';
+                var maxAttempts = 60;
+                var attempt = 0;
+                
+                while (attempt < maxAttempts) {
+                    await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+                    
+                    var historyResponse = await fetch(baseUrl + '/history/' + promptId);
+                    var historyData = await historyResponse.json();
+                    
+                    if (historyData[promptId] && historyData[promptId].outputs) {
+                        var outputs = historyData[promptId].outputs;
+                        var imageInfo = null;
+                        
+                        for (var nodeId in outputs) {
+                            if (outputs[nodeId].images && outputs[nodeId].images.length > 0) {
+                                imageInfo = outputs[nodeId].images[0];
+                                break;
+                            }
+                        }
+                        
+                        if (imageInfo) {
+                            var imageUrl = baseUrl + '/view?filename=' + encodeURIComponent(imageInfo.filename) + '&subfolder=' + encodeURIComponent(imageInfo.subfolder || '') + '&type=' + encodeURIComponent(imageInfo.type || 'output');
+                            
+                            var imageResponse = await fetch(imageUrl);
+                            resultBlob = await imageResponse.blob();
+                            var resultUrl = URL.createObjectURL(resultBlob);
+                            
+                            document.getElementById('resultImage').src = resultUrl;
+                            document.getElementById('resultSection').classList.add('show');
+                            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            break;
+                        }
+                    }
+                    
+                    attempt++;
+                }
+                
+                if (attempt >= maxAttempts) {
+                    throw new Error('處理超時，請稍後再試');
+                }
+
+            } catch (error) {
+                showError(error.message || '處理失敗，請檢查 API URL 和網路連線');
+                console.error('Error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '開始轉換風格';
+            }
+        }
+
+        function downloadResult() {
+            if (resultBlob) {
+                var url = URL.createObjectURL(resultBlob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'style_transfer_' + Date.now() + '.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        }
+    </script>
+</body>
+</html>
