@@ -132,6 +132,27 @@
             margin-bottom: 15px;
         }
 
+        .api-section select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+            cursor: pointer;
+        }
+
+        .api-section select:focus {
+            outline: none;
+            border-color: #9333ea;
+            box-shadow: 0 0 0 3px rgba(147, 51, 234, 0.1);
+        }
+
+        .api-section select:hover {
+            border-color: #9333ea;
+        }
+
         .api-section input {
             width: 100%;
             padding: 12px 16px;
@@ -417,6 +438,15 @@
             <label for="apiUrl">API 伺服器 URL</label>
             <input type="text" id="apiUrl" placeholder="http://127.0.0.1:8188">
             <div class="hint">請輸入你的 ComfyUI 伺服器地址（例如：http://127.0.0.1:8188）</div>
+        </div>
+
+        <div class="api-section">
+            <label for="modelType">🎭 模型類型</label>
+            <select id="modelType" style="width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 1em; transition: all 0.3s; background: white;">
+                <option value="dreamshaperXL_lightningDPMSDE.safetensors">🏞️ 風景圖 (DreamShaper XL Lightning)</option>
+                <option value="sd_xl_base_1.0.safetensors">👤 人像圖 (SDXL Base 1.0)</option>
+            </select>
+            <div class="hint">選擇適合的模型以獲得最佳效果</div>
         </div>
 
         <div class="api-section">
@@ -720,12 +750,13 @@
                 var depthStrength = parseFloat(document.getElementById('depthStrength').value);
                 var upscale = parseFloat(document.getElementById('upscale').value);
                 var imageSize = parseInt(document.getElementById('imageSize').value);
+                var modelType = document.getElementById('modelType').value;
                 
                 // Step 3: Prepare workflow
                 var workflow = {
                     "12": {"inputs": {"image": styleImageName}, "class_type": "LoadImage"},
                     "19": {"inputs": {"preset": "PLUS (high strength)", "model": ["72", 0]}, "class_type": "IPAdapterUnifiedLoader"},
-                    "72": {"inputs": {"ckpt_name": "dreamshaperXL_lightningDPMSDE.safetensors", "prompt": "[none]", "example": "[none]"}, "class_type": "CheckpointLoader|pysssss"},
+                    "72": {"inputs": {"ckpt_name": modelType, "prompt": "[none]", "example": "[none]"}, "class_type": "CheckpointLoader|pysssss"},
                     "74": {"inputs": {"text": "", "token_normalization": "none", "weight_interpretation": "A1111", "clip": ["72", 1]}, "class_type": "BNK_CLIPTextEncodeAdvanced"},
                     "75": {"inputs": {"text": "NSFW,old", "token_normalization": "none", "weight_interpretation": "A1111", "clip": ["72", 1]}, "class_type": "BNK_CLIPTextEncodeAdvanced"},
                     "77": {"inputs": {"seed": Math.floor(Math.random() * 1000000000000), "steps": steps, "cfg": cfg, "sampler_name": "dpmpp_sde_gpu", "scheduler": "karras", "denoise": 1, "model": ["102", 0], "positive": ["121", 0], "negative": ["121", 1], "latent_image": ["116", 0]}, "class_type": "KSampler"},
